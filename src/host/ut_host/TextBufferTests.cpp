@@ -2673,7 +2673,7 @@ void TextBufferTests::GetText()
 
         // simulate a selection from origin to {4,5}
         const auto textRects = _buffer->GetTextRects({ 0, 0 }, { 4, 5 }, blockSelection, false);
-        
+
         std::wstring result = L"";
 
         const auto formatWrappedRows = blockSelection;

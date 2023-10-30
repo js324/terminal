@@ -1416,7 +1416,7 @@ til::point TextBuffer::_GetWordEndForSelection(const til::point target, const st
 
     auto result = target;
     const auto initialDelimiter = _GetDelimiterClassAt(result, wordDelimiters);
-    bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;
+    const bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;
 
     // expand right until we hit the right boundary as a ControlChar or a different delimiter class
     while ((result != bufferSize.BottomRightInclusive() && _GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter))

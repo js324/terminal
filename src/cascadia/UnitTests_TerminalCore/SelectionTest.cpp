@@ -555,6 +555,7 @@ namespace TerminalCoreUnitTests
             // Double-clicking the ">" should only highlight that cell
             ValidateSingleRowSelection(term, til::inclusive_rect({ 15, 10, 15, 10 }));
         }
+
         TEST_METHOD(DoubleClickDrag_Right)
         {
             Terminal term;

@@ -1381,20 +1381,18 @@ til::point TextBuffer::_GetWordEndForAccessibility(const til::point target, cons
         while (result != limit && result != bufferSize.BottomRightInclusive() && _GetDelimiterClassAt(result, wordDelimiters) == DelimiterClass::RegularChar)
         {
             // Iterate through readable text
-            bufferSize.IncrementInBoundsCircular(result);
+            bufferSize.IncrementInBounds(result);
         }
 
         while (result != limit && result != bufferSize.BottomRightInclusive() && _GetDelimiterClassAt(result, wordDelimiters) != DelimiterClass::RegularChar)
         {
             // expand to the beginning of the NEXT word
-            bufferSize.IncrementInBoundsCircular(result);
+            bufferSize.IncrementInBounds(result);
         }
 
-        //result = iter.Pos();
-
-        //// Special case: we tried to move one past the end of the buffer,
-        //// but iter prevented that (because that pos doesn't exist).
-        //// Manually increment onto the EndExclusive point.
+     
+        // Special case: we tried to move one past the end of the buffer
+        // Manually increment onto the EndExclusive point.
         if (result == bufferSize.BottomRightInclusive())
         {
             bufferSize.IncrementInBounds(result, true);

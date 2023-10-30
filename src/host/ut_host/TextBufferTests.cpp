@@ -2251,10 +2251,7 @@ void TextBufferTests::GetWordBoundaries()
         const auto expected = accessibilityMode ? test.expected.accessibilityModeEnabled : test.expected.accessibilityModeDisabled;
         VERIFY_ARE_EQUAL(expected, result);
     }
-    /*"this wordiswrapped"
-    "whitespace          wrapped "*/
-    //check what happens when click at end of buffer
-    //have to do TESTS FOR BOTH GETWORDSTART, GETWORDEND
+
     _buffer->Reset();
     _buffer->ResizeTraditional({ 10, 5 });
     const std::vector<std::wstring> secondText = { L"this wordiswrapped",

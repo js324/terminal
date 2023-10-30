@@ -1247,37 +1247,34 @@ til::point TextBuffer::_GetWordStartForAccessibility(const til::point target, co
 {
     auto result = target;
     const auto bufferSize = GetSize();
-    auto stayAtOrigin = false;
-
+    
     // ignore left boundary. Continue until readable text found
     while (_GetDelimiterClassAt(result, wordDelimiters) != DelimiterClass::RegularChar)
     {
-        if (!bufferSize.DecrementInBounds(result))
-        {
-            // first char in buffer is a DelimiterChar or ControlChar
-            // we can't move any further back
-            stayAtOrigin = true;
-            break;
+        if (result == bufferSize.Origin())
+        { 
+            //looped around and hit origin (no word between origin and target)
+            return result;
         }
+        bufferSize.DecrementInBounds(result);
+        
     }
 
     // make sure we expand to the left boundary or the beginning of the word
     while (_GetDelimiterClassAt(result, wordDelimiters) == DelimiterClass::RegularChar)
     {
-        if (!bufferSize.DecrementInBounds(result))
+        if (result == bufferSize.Origin())
         {
             // first char in buffer is a RegularChar
             // we can't move any further back
-            break;
+            return result;
         }
+        bufferSize.DecrementInBounds(result);
     }
 
-    // move off of delimiter and onto word start
-    if (!stayAtOrigin && _GetDelimiterClassAt(result, wordDelimiters) != DelimiterClass::RegularChar)
-    {
-        bufferSize.IncrementInBounds(result);
-    }
-
+    // move off of delimeter
+    bufferSize.IncrementInBounds(result);
+   
     return result;
 }
 
@@ -1294,10 +1291,15 @@ til::point TextBuffer::_GetWordStartForSelection(const til::point target, const 
     const auto bufferSize = GetSize();
 
     const auto initialDelimiter = _GetDelimiterClassAt(result, wordDelimiters);
-
+    bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;
+    
     // expand left until we hit the left boundary or a different delimiter class
-    while (result.x > bufferSize.Left() && (_GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter))
+    while ((result != bufferSize.Origin() && _GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter))
     {
+        //prevent selection wrapping on whitespace selection
+        if (isControlChar && result.x == bufferSize.Left()) {
+            break;
+        }
         bufferSize.DecrementInBounds(result);
     }
 
@@ -1375,25 +1377,25 @@ til::point TextBuffer::_GetWordEndForAccessibility(const til::point target, cons
     }
     else
     {
-        auto iter{ GetCellDataAt(result, bufferSize) };
-        while (iter && iter.Pos() != limit && _GetDelimiterClassAt(iter.Pos(), wordDelimiters) == DelimiterClass::RegularChar)
+        //auto iter{ GetCellDataAt(result, bufferSize) };
+        while (result != limit && result != bufferSize.BottomRightInclusive() && _GetDelimiterClassAt(result, wordDelimiters) == DelimiterClass::RegularChar)
         {
             // Iterate through readable text
-            ++iter;
+            bufferSize.IncrementInBoundsCircular(result);
         }
 
-        while (iter && iter.Pos() != limit && _GetDelimiterClassAt(iter.Pos(), wordDelimiters) != DelimiterClass::RegularChar)
+        while (result != limit && result != bufferSize.BottomRightInclusive() && _GetDelimiterClassAt(result, wordDelimiters) != DelimiterClass::RegularChar)
         {
             // expand to the beginning of the NEXT word
-            ++iter;
+            bufferSize.IncrementInBoundsCircular(result);
         }
 
-        result = iter.Pos();
+        //result = iter.Pos();
 
-        // Special case: we tried to move one past the end of the buffer,
-        // but iter prevented that (because that pos doesn't exist).
-        // Manually increment onto the EndExclusive point.
-        if (!iter)
+        //// Special case: we tried to move one past the end of the buffer,
+        //// but iter prevented that (because that pos doesn't exist).
+        //// Manually increment onto the EndExclusive point.
+        if (result == bufferSize.BottomRightInclusive())
         {
             bufferSize.IncrementInBounds(result, true);
         }
@@ -1414,18 +1416,19 @@ til::point TextBuffer::_GetWordEndForSelection(const til::point target, const st
     const auto bufferSize = GetSize();
 
     // can't expand right
-    if (target.x == bufferSize.RightInclusive())
-    {
-        return target;
-    }
-
+    
     auto result = target;
     const auto initialDelimiter = _GetDelimiterClassAt(result, wordDelimiters);
-
-    // expand right until we hit the right boundary or a different delimiter class
-    while (result.x < bufferSize.RightInclusive() && (_GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter))
+    bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;
+    
+    // expand right until we hit the right boundary as a ControlChar or a different delimiter class
+    while ((result != bufferSize.BottomRightInclusive() && _GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter))
     {
-        bufferSize.IncrementInBounds(result);
+        if (isControlChar && result.x == bufferSize.RightInclusive())
+        {
+            break;
+        }
+        bufferSize.IncrementInBoundsCircular(result);
     }
 
     if (_GetDelimiterClassAt(result, wordDelimiters) != initialDelimiter)

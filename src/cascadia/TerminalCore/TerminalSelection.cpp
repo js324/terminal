@@ -293,6 +293,10 @@ std::pair<til::point, til::point> Terminal::_ExpandSelectionAnchors(std::pair<ti
         start = _activeBuffer().GetWordStart(start, _wordDelimiters);
         end = _activeBuffer().GetWordEnd(end, _wordDelimiters);
         break;
+    /*case SelectionExpansion::Buffer:
+        start = { bufferSize.Left(), start.y };
+        end = { bufferSize.RightExclusive(), end.y };
+        break;*/
     case SelectionExpansion::Char:
     default:
         // no expansion is necessary

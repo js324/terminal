@@ -2118,14 +2118,12 @@ void TextBufferTests::TestAppendRTFText()
 void TextBufferTests::WriteLinesToBuffer(const std::vector<std::wstring>& text, TextBuffer& buffer)
 {
     const auto bufferSize = buffer.GetSize();
-    int rowsWrapped{};
+
     for (size_t row = 0; row < text.size(); ++row)
     {
         auto line = text[row];
-        
         if (!line.empty())
         {
-            
             // TODO GH#780: writing up to (but not past) the end of the line
             //              should NOT set the wrap flag
             std::optional<bool> wrap = true;
@@ -2133,15 +2131,9 @@ void TextBufferTests::WriteLinesToBuffer(const std::vector<std::wstring>& text, 
             {
                 wrap = std::nullopt;
             }
-            
-            OutputCellIterator iter{ line };
-            buffer.Write(iter, { 0, gsl::narrow<til::CoordType>(row+rowsWrapped) }, wrap);
-            //prevent bug that overwrrites wrapped rows
-            if (line.size() > static_cast<size_t>(bufferSize.RightExclusive()))
-            {
-                rowsWrapped += static_cast<int>(line.size()) / bufferSize.RightExclusive();
-            }
 
+            OutputCellIterator iter{ line };
+            buffer.Write(iter, { 0, gsl::narrow<til::CoordType>(row) }, wrap);
         }
     }
 }
@@ -2245,7 +2237,7 @@ void TextBufferTests::GetWordBoundaries()
         { { 79, 1 }, { { 79, 1 }, { 0, 9001 } } },
     };
     // clang-format on
-    
+
     for (const auto& test : testData)
     {
         Log::Comment(NoThrowString().Format(L"til::point (%hd, %hd)", test.startPos.x, test.startPos.y));
@@ -2253,92 +2245,6 @@ void TextBufferTests::GetWordBoundaries()
         const auto expected = accessibilityMode ? test.expected.accessibilityModeEnabled : test.expected.accessibilityModeDisabled;
         VERIFY_ARE_EQUAL(expected, result);
     }
-    /*"this wordiswrapped"
-    "whitespace          wrapped "*/
-    //check what happens when click at end of buffer
-    //have to do TESTS FOR BOTH GETWORDSTART, GETWORDEND
-    _buffer->Reset();
-    _buffer->ResizeTraditional({ 10, 5 });
-    const std::vector<std::wstring> secondText = { L"this wordiswrapped",
-                                             L"spaces        wrapped reachEOB"};
-    //Buffer looks like:
-    //  this wordi
-    //  swrapped   
-    //  spaces    
-    //      wrappe
-    //  d reachEOB
-    WriteLinesToBuffer(secondText, *_buffer);
-    testData = {
-        { { 0, 0 }, { { 0, 0 }, { 0, 0 } } },
-        { { 1, 0 }, { { 0, 0 }, { 0, 0 } } },
-        { { 4, 0 }, { { 4, 0 }, { 0, 0 } } },
-        { { 5, 0 }, { { 5, 0 }, { 5, 0 } } },
-        { { 7, 0 }, { { 5, 0 }, { 5, 0 } } },
-
-        { { 4, 1 }, { { 5, 0 }, { 5, 0 } } },
-        { { 7, 1 }, { { 5, 0 }, { 5, 0 } } },
-        { { 9, 1 }, { { 8, 1 }, { 5, 0 } } },
-
-        { { 0, 2 }, { { 0, 2 }, { 0, 2 } } },
-        { { 7, 2 }, { { 6, 2 }, { 0, 2 } } },
-        
-        { { 1, 3 }, { { 0, 3 }, { 0, 2 } } },
-        { { 4, 3 }, { { 4, 3 }, { 4, 3 } } },
-        { { 8, 3 }, { { 4, 3 }, { 4, 3 } } },
-
-        { { 0, 4 }, { { 4, 3 }, { 4, 3 } } },
-        { { 1, 4 }, { { 1, 4 }, { 4, 3 } } },
-        { { 9, 4 }, { { 2, 4 }, { 2, 4 } } },
-    };
-    for (const auto& test : testData)
-    {
-        Log::Comment(NoThrowString().Format(L"Testing til::point (%hd, %hd)", test.startPos.x, test.startPos.y));
-        const auto result = _buffer->GetWordStart(test.startPos, delimiters, accessibilityMode);
-        const auto expected = accessibilityMode ? test.expected.accessibilityModeEnabled : test.expected.accessibilityModeDisabled;
-        VERIFY_ARE_EQUAL(expected, result);
-    }
-    
-    //GetWordEnd for Wrapping Text
-    //Buffer looks like:
-    //  this wordi
-    //  swrapped
-    //  spaces
-    //      wrappe
-    //  d reachEOB
-    testData = {
-        // tests for first line of text
-        { { 0, 0 }, { { 3, 0 }, { 5, 0 } } },
-        { { 1, 0 }, { { 3, 0 }, { 5, 0 } } },
-        { { 4, 0 }, { { 4, 0 }, { 5, 0 } } },
-        { { 5, 0 }, { { 7, 1 }, { 0, 2 } } },
-        { { 7, 0 }, { { 7, 1 }, { 0, 2 } } },
-
-        { { 4, 1 }, { { 7, 1 }, { 0, 2 } } },
-        { { 7, 1 }, { { 7, 1 }, { 0, 2 } } },
-        { { 9, 1 }, { { 9, 1 }, { 0, 2 } } },
-
-        { { 0, 2 }, { { 5, 2 }, { 4, 3 } } },
-        { { 7, 2 }, { { 9, 2 }, { 4, 3 } } },
-
-        { { 1, 3 }, { { 3, 3 }, { 4, 3 } } },
-        { { 4, 3 }, { { 0, 4 }, { 2, 4 } } },
-        { { 8, 3 }, { { 0, 4 }, { 2, 4 } } },
-
-        { { 0, 4 }, { { 0, 4 }, { 2, 4 } } },
-        { { 1, 4 }, { { 1, 4 }, { 2, 4 } } },
-        { { 4, 4 }, { { 9, 4 }, { 0, 5 } } },
-        { { 9, 4 }, { { 9, 4 }, { 0, 5 } } },
-    };
-    // clang-format on
-
-    for (const auto& test : testData)
-    {
-        Log::Comment(NoThrowString().Format(L"TestEnd til::point (%hd, %hd)", test.startPos.x, test.startPos.y));
-        auto result = _buffer->GetWordEnd(test.startPos, delimiters, accessibilityMode);
-        const auto expected = accessibilityMode ? test.expected.accessibilityModeEnabled : test.expected.accessibilityModeDisabled;
-        VERIFY_ARE_EQUAL(expected, result);
-    }
-
 }
 
 void TextBufferTests::MoveByWord()

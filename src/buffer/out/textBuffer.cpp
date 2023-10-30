@@ -1290,7 +1290,7 @@ til::point TextBuffer::_GetWordStartForSelection(const til::point target, const 
     const auto bufferSize = GetSize();
 
     const auto initialDelimiter = _GetDelimiterClassAt(result, wordDelimiters);
-    bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;
+    const bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;
 
     // expand left until we hit the left boundary or a different delimiter class
     while (result != bufferSize.Origin() && _GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter)
@@ -1377,7 +1377,6 @@ til::point TextBuffer::_GetWordEndForAccessibility(const til::point target, cons
     }
     else
     {
-        //auto iter{ GetCellDataAt(result, bufferSize) };
         while (result != limit && result != bufferSize.BottomRightInclusive() && _GetDelimiterClassAt(result, wordDelimiters) == DelimiterClass::RegularChar)
         {
             // Iterate through readable text

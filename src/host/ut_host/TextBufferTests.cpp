@@ -2135,7 +2135,7 @@ void TextBufferTests::WriteLinesToBuffer(const std::vector<std::wstring>& text, 
 
             OutputCellIterator iter{ line };
             buffer.Write(iter, { 0, gsl::narrow<til::CoordType>(row + rowsWrapped) }, wrap);
-            //prevent bug that overwrrites wrapped rows
+            //prevent bug that overwrites wrapped rows
             if (line.size() > static_cast<size_t>(bufferSize.RightExclusive()))
             {
                 rowsWrapped += static_cast<int>(line.size()) / bufferSize.RightExclusive();

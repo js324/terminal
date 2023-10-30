@@ -1293,7 +1293,7 @@ til::point TextBuffer::_GetWordStartForSelection(const til::point target, const 
     bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;
 
     // expand left until we hit the left boundary or a different delimiter class
-    while ((result != bufferSize.Origin() && _GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter))
+    while (result != bufferSize.Origin() && _GetDelimiterClassAt(result, wordDelimiters) == initialDelimiter)
     {
         //prevent selection wrapping on whitespace selection
         if (isControlChar && result.x == bufferSize.Left())

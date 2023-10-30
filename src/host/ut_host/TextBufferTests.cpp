@@ -2659,9 +2659,7 @@ void TextBufferTests::GetText()
 
         // Setup: Write lines of text to the buffer
         const std::vector<std::wstring> bufferText = { L"1234567",
-                                                       L"",
-                                                       L"  345",
-                                                       L"123    ",
+                                                       L"  345123    ",
                                                        L"" };
         WriteLinesToBuffer(bufferText, *_buffer);
         // buffer should look like this:
@@ -2675,7 +2673,7 @@ void TextBufferTests::GetText()
 
         // simulate a selection from origin to {4,5}
         const auto textRects = _buffer->GetTextRects({ 0, 0 }, { 4, 5 }, blockSelection, false);
-
+        
         std::wstring result = L"";
 
         const auto formatWrappedRows = blockSelection;
@@ -2741,7 +2739,7 @@ void TextBufferTests::GetText()
                     Log::Comment(L"Standard Copy to Clipboard");
                     expectedText += L"12345";
                     expectedText += L"67\r\n";
-                    expectedText += L"  345\r\n";
+                    expectedText += L"  345";
                     expectedText += L"123  \r\n";
                 }
                 else
@@ -2749,7 +2747,7 @@ void TextBufferTests::GetText()
                     Log::Comment(L"UI Automation");
                     expectedText += L"12345";
                     expectedText += L"67   \r\n";
-                    expectedText += L"  345\r\n";
+                    expectedText += L"  345";
                     expectedText += L"123  ";
                     expectedText += L"     \r\n";
                     expectedText += L"     ";

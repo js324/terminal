@@ -1389,7 +1389,6 @@ til::point TextBuffer::_GetWordEndForAccessibility(const til::point target, cons
             bufferSize.IncrementInBounds(result);
         }
 
-     
         // Special case: we tried to move one past the end of the buffer
         // Manually increment onto the EndExclusive point.
         if (result == bufferSize.BottomRightInclusive())

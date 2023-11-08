@@ -104,7 +104,7 @@ public:
 
     void UpdateSettings(const winrt::Microsoft::Terminal::Settings::Model::TerminalSettingsCreateResult& settings,
                         const winrt::Microsoft::Terminal::Settings::Model::Profile& profile);
-    bool ResizePane(const winrt::Microsoft::Terminal::Settings::Model::ResizeDirection& direction);
+    bool ResizePane(const winrt::Microsoft::Terminal::Settings::Model::ResizeDirection& direction, const float amount = 0.05f);
     std::shared_ptr<Pane> NavigateDirection(const std::shared_ptr<Pane> sourcePane,
                                             const winrt::Microsoft::Terminal::Settings::Model::FocusDirection& direction,
                                             const std::vector<uint32_t>& mruPanes);
@@ -290,7 +290,7 @@ private:
     Borders _GetCommonBorders();
     winrt::Windows::UI::Xaml::Media::SolidColorBrush _ComputeBorderColor();
 
-    bool _Resize(const winrt::Microsoft::Terminal::Settings::Model::ResizeDirection& direction);
+    bool _Resize(const winrt::Microsoft::Terminal::Settings::Model::ResizeDirection& direction, float amount = 0.05f);
 
     std::shared_ptr<Pane> _FindParentOfPane(const std::shared_ptr<Pane> pane);
     std::pair<PanePoint, PanePoint> _GetOffsetsForPane(const PanePoint parentOffset) const;

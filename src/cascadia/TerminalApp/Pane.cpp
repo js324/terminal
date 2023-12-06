@@ -334,6 +334,7 @@ Pane::BuildStartupState Pane::BuildStartupActions(uint32_t currentId,
 // - false if we couldn't resize this pane in the given direction, else true.
 bool Pane::_Resize(const ResizeDirection& direction, float amount)
 {
+
     if (!DirectionMatchesSplit(direction, _splitState))
     {
         return false;
@@ -352,15 +353,94 @@ bool Pane::_Resize(const ResizeDirection& direction, float amount)
     // actualDimension is the size in DIPs of this pane in the direction we're
     // resizing.
     const auto actualDimension = changeWidth ? actualSize.Width : actualSize.Height;
-
+    const auto oldPos = _desiredSplitPosition;
     _desiredSplitPosition = _ClampSplitPosition(changeWidth, _desiredSplitPosition - amount, actualDimension);
 
     // Resize our columns to match the new percentages.
     _CreateRowColDefinitions();
+    
+    if (_firstChild)
+        _firstChild->_AdjustChildSplits(direction, oldPos, _desiredSplitPosition, gsl::narrow_cast<float>(_root.ActualHeight()));
+    /*if (_secondChild)
+        _secondChild->_AdjustChildSplits(direction, _desiredSplitPosition, oldPos, gsl::narrow_cast<float>(_root.ActualHeight()));*/
+
+
+    /*if (_secondChild)
+    {
+        while (_secondChild && !(_secondChild->_firstChild->_IsLeaf())) {
+
+        }
+    }*/
+        
+    
+
+    
+
+    //_AdjustChildSplits();
+    //take current split %
+    //in case of top border being pulled up,
+        // take secondchild -> first child repeatedly until next one is leaf (pane we resize)
+            //  do ratio adjustment with clamping and adjust rowcol defs
+                // ratio is (old % / new %)  
+            //  (rest of children under will not be affected)
+        // take firstchild and have to do ratio adjustment for all children WITH CLAMPING
+            // ratio is (old % / new %) 
+    // in case of top border being pulled down
+        // same steps 
 
     return true;
 }
 
+bool Pane::_AdjustChildSplits(const ResizeDirection& direction, const float oldPos, const float newPos, const float rootSize)
+{
+    if (!DirectionMatchesSplit(direction, _splitState))
+    {
+        if (_firstChild)
+            _firstChild->_AdjustChildSplits(direction, oldPos, newPos, gsl::narrow_cast<float>(_root.ActualHeight()));
+        if (_secondChild)
+            _secondChild->_AdjustChildSplits(direction, oldPos, newPos, gsl::narrow_cast<float>(_root.ActualHeight()));
+
+        return false;
+    }
+    //STILL NEED TO HANDLE CASE OF PASSING FIRST CHILD IN THE WAY,
+        // NEED TO CLAMP/RESIZE THE REST IN THE WAY
+    // Make sure we're not making a pane explode here by resizing it to 0 characters.
+    const auto changeWidth = _splitState == SplitState::Vertical;
+    const Size actualSize{ gsl::narrow_cast<float>(_root.ActualWidth()),
+                           gsl::narrow_cast<float>(_root.ActualHeight()) };
+    // actualDimension is the size in DIPs of this pane in the direction we're
+    // resizing.
+    const auto actualDimension = changeWidth ? actualSize.Width : actualSize.Height;
+    const auto newSplit = (oldPos / newPos) * _desiredSplitPosition;
+    
+    _desiredSplitPosition = _ClampSplitPosition(changeWidth, newSplit, actualDimension);
+    //decrease _desiredSplitPosition*(curr _root.size()) by this to get the newAbsPos
+    const auto absDiff = oldPos * rootSize - newPos * rootSize;
+    
+    const auto oldAbsPos = _desiredSplitPosition*actualSize.Height;
+    const auto newAbsPos = oldAbsPos - absDiff;
+
+    
+    const auto secondMinSize = _secondChild->_GetMinSize();
+    const auto maxSplitPosition = 1.0f - (secondMinSize.Height / actualSize.Height);
+    _CreateRowColDefinitions();
+    
+    const float newFCHeight = gsl::narrow_cast<float>(_firstChild->_root.ActualHeight());
+    const float newSCHeight = gsl::narrow_cast<float>(_secondChild->_root.ActualHeight());
+    if (_firstChild && newSplit >= maxSplitPosition) //when passing minHeight of second child, need to start adjusting split of first child
+        _firstChild->_AdjustChildSplits(direction, oldAbsPos, newAbsPos, newFCHeight);
+    if (_secondChild)
+        _secondChild->_AdjustChildSplits(direction, newAbsPos-newFCHeight, oldAbsPos-newFCHeight, newSCHeight);
+
+
+
+
+    return true;
+
+    
+
+
+}
 // Method Description:
 // - Moves the separator between panes, as to resize each child on either size
 //   of the separator. Tries to move a separator in the given direction. The
@@ -380,6 +460,8 @@ bool Pane::ResizePane(const ResizeDirection& direction, const float amount)
     {
         return false;
     }
+    //need to find abs position of _lastActive pane compared to root
+    //auto rootPosition =
 
     // Check if either our first or second child is the currently focused pane.
     // If it is, and the requested resize direction matches our separator, then
@@ -2103,16 +2185,25 @@ Borders Pane::_GetCommonBorders()
 // - <none>
 void Pane::_ApplySplitDefinitions()
 {
+    //plan of action to get all direction dragging to work ->
+        //need way to determine what side of border we are dragging
+            //(most likely we calculate position of cursor relative to _control, see what side)
+            //we can use this (side of border we clicked) with resize direction to resize pane
+                //need to refactor resize pane, in worst case, we will need to resize pane on higher level of the element tree
+                //keep in mind _resize works based on percentages (ex: 39.5% for 1 pane 1% for separator 59.5% for other)
+                //(maybe keep hotkey functionality seperate cuz how it would work otherwise)
+            //vscode on split terminal, when resizing multiple panels and recursively shrinking it actually SAVES the position of these borders until you let go
+                //in our case we just save _desiredsplitposition
+            //maybe when holding alt, we can allow free-form manipulation mode, but on borders, keep it to the rails
     if (_splitState == SplitState::Vertical) // R - L split
     {
         Controls::Grid::SetColumn(_borderFirst, 0);
         Controls::Grid::SetColumn(_borderSecond, 1);
-
+        //if you are clking on left border and you are the left child (firstchild), need to go one higher up and resize that pane (regardless of direction L or R)
+        
         _firstChild->_borders = _borders | Borders::Right;
         _secondChild->_borders = _borders | Borders::Left;
         _borders = Borders::None;
-        _borderFirst.ManipulationMode(Xaml::Input::ManipulationModes::TranslateX | Xaml::Input::ManipulationModes::TranslateRailsX);
-        _borderSecond.ManipulationMode(Xaml::Input::ManipulationModes::TranslateX | Xaml::Input::ManipulationModes::TranslateRailsX);
         _firstChild->_ApplySplitDefinitions();
         _secondChild->_ApplySplitDefinitions();
     }
@@ -2124,141 +2215,153 @@ void Pane::_ApplySplitDefinitions()
         _firstChild->_borders = _borders | Borders::Bottom;
         _secondChild->_borders = _borders | Borders::Top;
         _borders = Borders::None;
-        _borderFirst.ManipulationMode(Xaml::Input::ManipulationModes::TranslateY | Xaml::Input::ManipulationModes::TranslateRailsY);
-        _borderSecond.ManipulationMode(Xaml::Input::ManipulationModes::TranslateY | Xaml::Input::ManipulationModes::TranslateRailsY);
         _firstChild->_ApplySplitDefinitions();
         _secondChild->_ApplySplitDefinitions();
         
     }
     
     // define mouse resize for this split
-    const auto isLeaf = _IsLeaf();
-    if (!isLeaf)
+    
+        //Manipulation Starting vs Started? Started only fires after movement, Starting includes any interaction
+    if (_IsLeaf())
     {
-        _borderSecond.ManipulationDelta([this](auto&& sender, auto& args) {
-            auto delta = args.Delta().Translation;
-            auto whois = sender;
-
-            /*auto fChild = (_firstChild->_borderFirst);
-            auto sChild = _secondChild;*/
-            // Decide on direction based on delta
-            ResizeDirection dir = ResizeDirection::None;
-            if (_splitState == SplitState::Vertical)
-            {
-                if (delta.X < 0)
-                {
-                    dir = ResizeDirection::Left;
-                }
-                else if (delta.X > 0)
-                {
-                    dir = ResizeDirection::Right;
-                }
-            }
-            else if (_splitState == SplitState::Horizontal)
-            {
-                if (delta.Y < 0)
-                {
-                    dir = ResizeDirection::Up;
-                }
-                else if (delta.Y > 0)
-                {
-                    dir = ResizeDirection::Down;
-                }
-            }
-
-            // Resize in the given direction
-            if (dir != ResizeDirection::None)
-            {
-                // turn delta into a percentage
-                base::ClampedNumeric<float> amount;
-                base::ClampedNumeric<float> actualDimension;
-                if (dir == ResizeDirection::Left || dir == ResizeDirection::Right)
-                {
-                    amount = delta.X;
-                    // TODO CARLOS: something is wrong here
-                    actualDimension = base::ClampedNumeric<float>(_root.ActualWidth());
-                }
-                else if (dir == ResizeDirection::Up || dir == ResizeDirection::Down)
-                {
-                    amount = delta.Y;
-                    // TODO CARLOS: something is wrong here
-                    actualDimension = base::ClampedNumeric<float>(_root.ActualHeight());
-                }
-
-                amount /= actualDimension;
-
-                ResizePane(dir, amount.Abs());
-            }
+        _control.ManipulationMode(Xaml::Input::ManipulationModes::All);
+        _control.ManipulationStarted([this](auto&&, auto& args) {
             args.Handled(true);
-            _UpdateBorders();
         });
-        _borderFirst.ManipulationDelta([this](auto sender, auto& args) {
-            auto delta = args.Delta().Translation;
-            
-            /*auto fChild = (_firstChild->_borderFirst);
-            auto sChild = _secondChild;*/
-            // Decide on direction based on delta
-            ResizeDirection dir = ResizeDirection::None;
-            if (_splitState == SplitState::Vertical)
+        _control.ManipulationDelta([this](auto&&, auto& args) {
+            args.Handled(true);
+        });
+        _root.ManipulationStarted([this](auto sender, auto&) {
+            _FocusFirstChild();
+        });
+        _root.ManipulationMode(winrt::Windows::UI::Xaml::Input::ManipulationModes::TranslateY | winrt::Windows::UI::Xaml::Input::ManipulationModes::TranslateRailsY);
+        _root.ManipulationStarted([this](auto sender, auto& args) {
+            auto pos = args.Position();
+            auto actHeight = _root.ActualHeight();
+            if (pos.Y < PaneBorderSize)
             {
-                if (delta.X < 0)
-                {
-                    dir = ResizeDirection::Left;
-                }
-                else if (delta.X > 0)
-                {
-                    dir = ResizeDirection::Right;
-                }
+                _selectedBorder = Borders::Top;
             }
-            else if (_splitState == SplitState::Horizontal)
+            if (pos.Y > (actHeight - PaneBorderSize))
             {
-                if (delta.Y < 0)
-                {
-                    dir = ResizeDirection::Up;
-                }
-                else if (delta.Y > 0)
-                {
-                    dir = ResizeDirection::Down;
-                }
-            }
-
-            // Resize in the given direction
-            if (dir != ResizeDirection::None)
-            {
-                // turn delta into a percentage
-                base::ClampedNumeric<float> amount;
-                base::ClampedNumeric<float> actualDimension;
-                if (dir == ResizeDirection::Left || dir == ResizeDirection::Right)
-                {
-                    amount = delta.X;
-                    // TODO CARLOS: something is wrong here
-                    actualDimension = base::ClampedNumeric<float>(_root.ActualWidth());
-                }
-                else if (dir == ResizeDirection::Up || dir == ResizeDirection::Down)
-                {
-                    amount = delta.Y;
-                    // TODO CARLOS: something is wrong here
-                    actualDimension = base::ClampedNumeric<float>(_root.ActualHeight());
-                }
-
-                amount /= actualDimension;
-
-                ResizePane(dir, amount.Abs());
+                _selectedBorder = Borders::Bottom;
             }
             args.Handled(true);
-            _UpdateBorders();
+        
         });
     }
-    else {
-        //wanted to handle all within _border handler but needs a way to stop manipulationdelta event from propogating to border, even though it originated in _control
-        //I thought there was a OriginalSource property in ManipulationDeltaRoutedEventArgs (args) but its not there?      
-        _control.ManipulationMode(Xaml::Input::ManipulationModes::All);
+    else if (_root)
+    {
+        _root.ManipulationMode(winrt::Windows::UI::Xaml::Input::ManipulationModes::TranslateY | winrt::Windows::UI::Xaml::Input::ManipulationModes::TranslateRailsY);
+        _root.ManipulationCompleted([this](auto sender, auto&) {
+            if (_firstChild)
+                _firstChild->_selectedBorder = Borders::None;
+            if (_secondChild)
+                _secondChild->_selectedBorder = Borders::None;
+         }); 
+        _root.ManipulationDelta([this](auto sender, auto& args) {
+            auto delta = args.Delta().Translation;
+            //auto direction = _selectedBorder;
+            /*auto fChild = (_firstChild->_borderFirst);
+            auto sChild = _secondChild;*/
+            // Decide on direction based on delta
+            //if selected border top and focused is first child, recurse upwards to resize (same direction)
+                //if selected border is top and is first child, then we let parent handle it
+                //in case of for ex. we are second child with bottom selected border going downwards, we propogate upwards and are still second child with bottom border, keep going (because we need to find parent of it)
+            ResizeDirection dir = ResizeDirection::None;
+            if (_splitState == SplitState::Vertical)
+            {
+                if (delta.X < 0)
+                {
+                    dir = ResizeDirection::Left;
+                }
+                else if (delta.X > 0)
+                {
+                    dir = ResizeDirection::Right;
+                }
+            }
+            else if (_splitState == SplitState::Horizontal)
+            {
+                if (delta.Y < 0)
+                {
+                    dir = ResizeDirection::Up;
+                }
+                else if (delta.Y > 0)
+                {
+                    dir = ResizeDirection::Down;
+                }
+            }
+
+            if (!(_firstChild && (_firstChild->_lastActive || !_IsLeaf()) && _firstChild->_selectedBorder == Borders::Top) &&
+                !(_secondChild && (_secondChild->_lastActive || !_IsLeaf()) && _secondChild->_selectedBorder == Borders::Bottom))
+            {
+
+                // Resize in the given direction
+                if (dir != ResizeDirection::None)
+                {
+                    // turn delta into a percentage
+                    base::ClampedNumeric<float> amount;
+                    base::ClampedNumeric<float> actualDimension;
+                    if (dir == ResizeDirection::Left || dir == ResizeDirection::Right)
+                    {
+                        amount = delta.X;
+                        // TODO CARLOS: something is wrong here
+                        actualDimension = base::ClampedNumeric<float>(_root.ActualWidth());
+                    }
+                    else if (dir == ResizeDirection::Up || dir == ResizeDirection::Down)
+                    {
+                        amount = delta.Y;
+                        // TODO CARLOS: something is wrong here
+                        actualDimension = base::ClampedNumeric<float>(_root.ActualHeight());
+                    }
+
+                    amount /= actualDimension;
+                    if ((dir == ResizeDirection::Up || dir == ResizeDirection::Down) && _splitState == SplitState::Horizontal)
+                    {
+                        _Resize(dir, amount.Abs());
+                        
+                        args.Handled(true);
+                    }
+                    else //needed if for ex. selected border was top or bottom, but current splitstate was vertical
+                    {
+                        if (_firstChild && _firstChild->_lastActive)
+                        {
+                            _selectedBorder = _firstChild->_selectedBorder;
+                        }
+                        else if (_secondChild && _secondChild->_lastActive)
+                        {
+                            _selectedBorder = _secondChild->_selectedBorder;
+                        }
+                    }
+                }
+                else
+                {
+                    if (_firstChild && _firstChild->_lastActive)
+                    {
+                        _selectedBorder = _firstChild->_selectedBorder;
+                    }
+                    else if (_secondChild && _secondChild->_lastActive)
+                    {
+                        _selectedBorder = _secondChild->_selectedBorder;
+                    }
+                }
+                
+            }
+            
+        });
+
+        //else {
+        //    //wanted to handle all within _border handler but needs a way to stop manipulationdelta event from propogating to border, even though it originated in _control
+        //    //I thought there was a OriginalSource property in ManipulationDeltaRoutedEventArgs (args) but its not there?
+        /*_control.ManipulationMode(Xaml::Input::ManipulationModes::All);
         (_control).ManipulationDelta([this](auto&&, auto& args) {
             args.Handled(true);
-        });
+        });*/
+        //}
     }
     _UpdateBorders();
-    //
+
 }
 
 // Method Description:
@@ -3244,10 +3347,14 @@ float Pane::_ClampSplitPosition(const bool widthOrHeight, const float requestedV
 
     const auto firstMinDimension = widthOrHeight ? firstMinSize.Width : firstMinSize.Height;
     const auto secondMinDimension = widthOrHeight ? secondMinSize.Width : secondMinSize.Height;
-
+    //small bug when minSplitPos and maxSplitPos should be same, float math is off leading min > max
     const auto minSplitPosition = firstMinDimension / totalSize;
     const auto maxSplitPosition = 1.0f - (secondMinDimension / totalSize);
-
+    //breaking because when we resize pane towards minSize, does not take into account child's split position
+    //therefore as we approach min, child's children are not clamping but still being resized as smaller
+    if (firstMinDimension + secondMinDimension >= totalSize) {
+        return std::clamp(requestedValue, minSplitPosition, minSplitPosition);
+    }
     return std::clamp(requestedValue, minSplitPosition, maxSplitPosition);
 }
 

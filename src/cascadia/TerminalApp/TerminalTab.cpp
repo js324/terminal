@@ -89,7 +89,84 @@ namespace winrt::TerminalApp::implementation
         _CreateContextMenu();
 
         _headerControl.TabStatus(_tabStatus);
+        //const auto& root = _rootPane->GetRootElement();
+        //root.ManipulationMode(winrt::Windows::UI::Xaml::Input::ManipulationModes::TranslateY | winrt::Windows::UI::Xaml::Input::ManipulationModes::TranslateRailsY);
+        //root.ManipulationStarted([this](auto sender, auto& args) {
+        //    
+        //    const auto focusedPane = (root->_firstChild->_IsLeaf() && root->_firstChild->_lastActive) ? root->_firstChild : root->_secondChild;
+        //    auto pos = args.Position();
+        //    auto transform = focusedPane->_root.TransformToVisual(nullptr);
+        //    //auto inverse = transform.Inverse();
+        //    auto actHeight = focusedPane->_root.ActualHeight();
+        //    actHeight += 0;
+        //    auto offset = transform.TransformPoint(pos);
+        //    if (pos.Y < Pane::PaneBorderSize)
+        //    {
+        //        _selectedBorder = Borders::Top;
+        //    }
+        //    if (pos.Y > (actHeight - Pane::PaneBorderSize))
+        //    {
+        //        _selectedBorder = Borders::Bottom;
+        //    }
+        //    args.Handled(true);
+        //    
+        //});
+        //root.ManipulationDelta([this](auto sender, auto& args) {
+        //    auto delta = args.Delta().Translation;
+        //    //auto direction = _selectedBorder;
+        //    /*auto fChild = (_firstChild->_borderFirst);
+        //    auto sChild = _secondChild;*/
+        //    // Decide on direction based on delta
+        //    ResizeDirection dir = ResizeDirection::None;
+        //    if (_splitState == SplitState::Vertical)
+        //    {
+        //        if (delta.X < 0)
+        //        {
+        //            dir = ResizeDirection::Left;
+        //        }
+        //        else if (delta.X > 0)
+        //        {
+        //            dir = ResizeDirection::Right;
+        //        }
+        //    }
+        //    else if (_splitState == SplitState::Horizontal)
+        //    {
+        //        if (delta.Y < 0)
+        //        {
+        //            dir = ResizeDirection::Up;
+        //        }
+        //        else if (delta.Y > 0)
+        //        {
+        //            dir = ResizeDirection::Down;
+        //        }
+        //    }
 
+        //    // Resize in the given direction
+        //    if (dir != ResizeDirection::None)
+        //    {
+        //        // turn delta into a percentage
+        //        base::ClampedNumeric<float> amount;
+        //        base::ClampedNumeric<float> actualDimension;
+        //        if (dir == ResizeDirection::Left || dir == ResizeDirection::Right)
+        //        {
+        //            amount = delta.X;
+        //            // TODO CARLOS: something is wrong here
+        //            actualDimension = base::ClampedNumeric<float>(_root.ActualWidth());
+        //        }
+        //        else if (dir == ResizeDirection::Up || dir == ResizeDirection::Down)
+        //        {
+        //            amount = delta.Y;
+        //            // TODO CARLOS: something is wrong here
+        //            actualDimension = base::ClampedNumeric<float>(_root.ActualHeight());
+        //        }
+
+        //        amount /= actualDimension;
+
+        //        ResizePane(dir, amount.Abs());
+        //    }
+        //    args.Handled(true);
+        //   
+        //});
         // Add an event handler for the header control to tell us when they want their title to change
         _headerControl.TitleChangeRequested([weakThis = get_weak()](auto&& title) {
             if (auto tab{ weakThis.get() })

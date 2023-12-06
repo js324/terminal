@@ -267,7 +267,7 @@ private:
     winrt::Windows::UI::Xaml::UIElement::LostFocus_revoker _lostFocusRevoker;
 
     Borders _borders{ Borders::None };
-
+    Borders _selectedBorder{ Borders::None };
     bool _zoomed{ false };
     bool _broadcastEnabled{ false };
 
@@ -291,7 +291,7 @@ private:
     winrt::Windows::UI::Xaml::Media::SolidColorBrush _ComputeBorderColor();
 
     bool _Resize(const winrt::Microsoft::Terminal::Settings::Model::ResizeDirection& direction, float amount = 0.05f);
-
+    bool _AdjustChildSplits(const winrt::Microsoft::Terminal::Settings::Model::ResizeDirection& direction, const float oldPos, const float newPos, const float rootSize);
     std::shared_ptr<Pane> _FindParentOfPane(const std::shared_ptr<Pane> pane);
     std::pair<PanePoint, PanePoint> _GetOffsetsForPane(const PanePoint parentOffset) const;
     bool _IsAdjacent(const PanePoint firstOffset, const PanePoint secondOffset, const winrt::Microsoft::Terminal::Settings::Model::FocusDirection& direction) const;

@@ -1411,7 +1411,6 @@ til::point TextBuffer::_GetWordEndForSelection(const til::point target, const st
 {
     const auto bufferSize = GetSize();
 
-
     auto result = target;
     const auto initialDelimiter = _GetDelimiterClassAt(result, wordDelimiters);
     const bool isControlChar = initialDelimiter == DelimiterClass::ControlChar;

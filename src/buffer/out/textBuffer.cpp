@@ -1271,7 +1271,7 @@ til::point TextBuffer::_GetWordStartForAccessibility(const til::point target, co
         bufferSize.DecrementInBounds(result);
     }
 
-    // move off of delimeter
+    // move off of delimiter
     bufferSize.IncrementInBounds(result);
 
     return result;
@@ -1411,7 +1411,6 @@ til::point TextBuffer::_GetWordEndForSelection(const til::point target, const st
 {
     const auto bufferSize = GetSize();
 
-    // can't expand right
 
     auto result = target;
     const auto initialDelimiter = _GetDelimiterClassAt(result, wordDelimiters);

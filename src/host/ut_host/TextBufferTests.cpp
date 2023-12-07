@@ -2122,10 +2122,9 @@ void TextBufferTests::WriteLinesToBuffer(const std::vector<std::wstring>& text, 
     for (size_t row = 0; row < text.size(); ++row)
     {
         auto line = text[row];
-        
+
         if (!line.empty())
         {
-            
             // TODO GH#780: writing up to (but not past) the end of the line
             //              should NOT set the wrap flag
             std::optional<bool> wrap = true;
@@ -2133,15 +2132,14 @@ void TextBufferTests::WriteLinesToBuffer(const std::vector<std::wstring>& text, 
             {
                 wrap = std::nullopt;
             }
-            
+
             OutputCellIterator iter{ line };
-            buffer.Write(iter, { 0, gsl::narrow<til::CoordType>(row+rowsWrapped) }, wrap);
-            //prevent bug that overwrrites wrapped rows
+            buffer.Write(iter, { 0, gsl::narrow<til::CoordType>(row + rowsWrapped) }, wrap);
+            //prevent bug that overwrites wrapped rows
             if (line.size() > static_cast<size_t>(bufferSize.RightExclusive()))
             {
                 rowsWrapped += static_cast<int>(line.size()) / bufferSize.RightExclusive();
             }
-
         }
     }
 }
@@ -2245,7 +2243,7 @@ void TextBufferTests::GetWordBoundaries()
         { { 79, 1 }, { { 79, 1 }, { 0, 9001 } } },
     };
     // clang-format on
-    
+
     for (const auto& test : testData)
     {
         Log::Comment(NoThrowString().Format(L"til::point (%hd, %hd)", test.startPos.x, test.startPos.y));
@@ -2253,18 +2251,15 @@ void TextBufferTests::GetWordBoundaries()
         const auto expected = accessibilityMode ? test.expected.accessibilityModeEnabled : test.expected.accessibilityModeDisabled;
         VERIFY_ARE_EQUAL(expected, result);
     }
-    /*"this wordiswrapped"
-    "whitespace          wrapped "*/
-    //check what happens when click at end of buffer
-    //have to do TESTS FOR BOTH GETWORDSTART, GETWORDEND
+
     _buffer->Reset();
     _buffer->ResizeTraditional({ 10, 5 });
     const std::vector<std::wstring> secondText = { L"this wordiswrapped",
-                                             L"spaces        wrapped reachEOB"};
+                                                   L"spaces        wrapped reachEOB" };
     //Buffer looks like:
     //  this wordi
-    //  swrapped   
-    //  spaces    
+    //  swrapped
+    //  spaces
     //      wrappe
     //  d reachEOB
     WriteLinesToBuffer(secondText, *_buffer);
@@ -2281,7 +2276,7 @@ void TextBufferTests::GetWordBoundaries()
 
         { { 0, 2 }, { { 0, 2 }, { 0, 2 } } },
         { { 7, 2 }, { { 6, 2 }, { 0, 2 } } },
-        
+
         { { 1, 3 }, { { 0, 3 }, { 0, 2 } } },
         { { 4, 3 }, { { 4, 3 }, { 4, 3 } } },
         { { 8, 3 }, { { 4, 3 }, { 4, 3 } } },
@@ -2297,7 +2292,7 @@ void TextBufferTests::GetWordBoundaries()
         const auto expected = accessibilityMode ? test.expected.accessibilityModeEnabled : test.expected.accessibilityModeDisabled;
         VERIFY_ARE_EQUAL(expected, result);
     }
-    
+
     //GetWordEnd for Wrapping Text
     //Buffer looks like:
     //  this wordi
@@ -2338,7 +2333,6 @@ void TextBufferTests::GetWordBoundaries()
         const auto expected = accessibilityMode ? test.expected.accessibilityModeEnabled : test.expected.accessibilityModeDisabled;
         VERIFY_ARE_EQUAL(expected, result);
     }
-
 }
 
 void TextBufferTests::MoveByWord()
@@ -2665,9 +2659,7 @@ void TextBufferTests::GetText()
 
         // Setup: Write lines of text to the buffer
         const std::vector<std::wstring> bufferText = { L"1234567",
-                                                       L"",
-                                                       L"  345",
-                                                       L"123    ",
+                                                       L"  345123    ",
                                                        L"" };
         WriteLinesToBuffer(bufferText, *_buffer);
         // buffer should look like this:
@@ -2747,7 +2739,7 @@ void TextBufferTests::GetText()
                     Log::Comment(L"Standard Copy to Clipboard");
                     expectedText += L"12345";
                     expectedText += L"67\r\n";
-                    expectedText += L"  345\r\n";
+                    expectedText += L"  345";
                     expectedText += L"123  \r\n";
                 }
                 else
@@ -2755,7 +2747,7 @@ void TextBufferTests::GetText()
                     Log::Comment(L"UI Automation");
                     expectedText += L"12345";
                     expectedText += L"67   \r\n";
-                    expectedText += L"  345\r\n";
+                    expectedText += L"  345";
                     expectedText += L"123  ";
                     expectedText += L"     \r\n";
                     expectedText += L"     ";
